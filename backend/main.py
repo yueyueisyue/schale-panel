@@ -4,9 +4,9 @@ SCHALE Panel BFF —— 蔚蓝档案风格面板的后端聚合层
 职责：
   1. 登录鉴权（本地密码 → JWT，浏览器只持有 BFF 签发的 token，永不接触 AstrBot 的 JWT）
   2. 把 AstrBot 的碎 API + 只能读文件的插件数据，聚合成前端要的形状
-  3. 局域网访问（默认 0.0.0.0:7870，只有密码是唯一的关口）
+  3. 局域网访问（默认只监听 127.0.0.1:7870；要给别人访问就把 host 改成 0.0.0.0，并把密码设复杂）
 
-启动：uvicorn main:app --host 0.0.0.0 --port 7870
+启动：python main.py（默认 127.0.0.1:7870，可用 SCHALE_HOST / SCHALE_PORT 覆盖）
 """
 from __future__ import annotations
 
@@ -35,10 +35,26 @@ CONFIG = BASE / "config.json"
 EXAMPLE = BASE / "config.example.json"
 if not CONFIG.exists() and EXAMPLE.exists():
     shutil.copyfile(EXAMPLE, CONFIG)
-    print("[setup] 已从 config.example.json 生成 config.json，请先填写 data_dir 与 password")
-CFG = json.loads(CONFIG.read_text(encoding="utf-8"))
+    print("=" * 62)
+    print(" 首次启动：已生成 backend/config.json")
+    print(" 请改成你自己的设置，最少要填这 3 项：")
+    print("   data_dir   AstrBot 的 data 目录，例如 D:/AstrBot/data")
+    print("   password   面板登录密码（现在还是 CHANGE_ME）")
+    print("   onebot     想从面板发 QQ 消息时才需要填")
+    print("=" * 62)
+try:
+    CFG = json.loads(CONFIG.read_text(encoding="utf-8-sig"))
+except json.JSONDecodeError as e:
+    print("=" * 62)
+    print(f"[x] {CONFIG} 不是合法的 JSON：{e}")
+    print("    最常见的原因：多写了一个逗号，或者用了中文引号 “” 。")
+    print("    可以贴到 https://jsonlint.com 检查一下。")
+    print("=" * 62)
+    raise SystemExit(1)
 
 PASSWORD: str = os.environ.get("SCHALE_PASSWORD") or str(CFG.get("password") or "change-me")
+if PASSWORD in ("CHANGE_ME", "change-me"):
+    print("[warn] password 还是默认占位符，任何人都能登录。改完 config.json 再重启。")
 SECRET: bytes = (os.environ.get("SCHALE_JWT_SECRET") or CFG.get("jwt_secret")
                  or hashlib.sha256(os.urandom(32)).hexdigest()).encode()
 TOKEN_HOURS: int = int(CFG.get("token_hours", 720))
@@ -513,4 +529,7 @@ if _DIST.is_dir():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host=CFG.get("host", "0.0.0.0"), port=int(CFG.get("port", 7870)), log_level="info")
+    host = os.environ.get("SCHALE_HOST") or CFG.get("host") or "127.0.0.1"
+    port = int(os.environ.get("SCHALE_PORT") or CFG.get("port") or 7870)
+    print(f"[boot] http://{host}:{port}/")
+    uvicorn.run(app, host=host, port=port, log_level="info")
