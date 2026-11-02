@@ -1,0 +1,71 @@
+[
+  {
+    "key": "arona",
+    "name": "阿罗娜",
+    "dir": "/live2d/arona-spr",
+    "skel": "arona_spr.skel",
+    "atlas": "arona_spr.atlas",
+    "fit": "fill"
+  },
+  {
+    "key": "plana",
+    "name": "普拉那",
+    "dir": "/live2d/plana-spr",
+    "skel": "NP0035_spr.skel",
+    "atlas": "NP0035_spr.atlas"
+  },
+  {
+    "key": "ayumu",
+    "name": "岩柜步",
+    "dir": "/live2d/ayumu-spr",
+    "skel": "NP0013_spr.skel",
+    "atlas": "NP0013_spr.atlas"
+  },
+  {
+    "key": "aoi",
+    "name": "葵",
+    "dir": "/live2d/aoi-spr",
+    "skel": "NP0032_spr.skel",
+    "atlas": "NP0032_spr.atlas"
+  },
+  {
+    "key": "sora",
+    "name": "小空·店服",
+    "dir": "/live2d/sora-shop",
+    "skel": "sora_shop.skel",
+    "atlas": "sora_shop.atlas",
+    "fit": "fill"
+  },
+  {
+    "key": "soraS",
+    "name": "小空·常服",
+    "dir": "/live2d/sora-spr",
+    "skel": "sora_spr.skel",
+    "atlas": "sora_spr.atlas",
+    "fit": "fill"
+  },
+  {
+    "key": "rin",
+    "name": "琳",
+    "dir": "/live2d/rin-spr",
+    "skel": "rin_spr.skel",
+    "atlas": "rin_spr.atlas",
+    "fit": "fill"
+  },
+  {
+    "key": "momoka",
+    "name": "桃香",
+    "dir": "/live2d/momoka-spr",
+    "skel": "momoka_spr.skel",
+    "atlas": "momoka_spr.atlas",
+    "fit": "fill"
+  },
+  {
+    "key": "mikaW",
+    "name": "弥香·泳装",
+    "dir": "/live2d/mika-swim",
+    "skel": "CH0294_home.skel",
+    "atlas": "CH0294_home.atlas",
+    "fit": "fill"
+  }
+]

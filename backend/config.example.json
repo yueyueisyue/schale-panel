@@ -1,0 +1,53 @@
+{
+  "password": "CHANGE_ME",
+  "jwt_secret": "",
+  "token_hours": 24,
+  "data_dir": "./data",
+  "owners": [
+    "10000"
+  ],
+  "onebot": {
+    "base": "http://127.0.0.1:3000",
+    "token": "YOUR_ONEBOT_TOKEN"
+  },
+  "services": [
+    {
+      "key": "panel",
+      "name": "面板后端",
+      "port": 7870,
+      "cmd": "",
+      "cwd": "",
+      "autostart": false
+    },
+    {
+      "key": "astrbot",
+      "name": "AstrBot",
+      "port": 6185,
+      "cmd": "",
+      "cwd": "",
+      "autostart": false
+    },
+    {
+      "key": "napcat",
+      "name": "NapCat QQ",
+      "port": 6099,
+      "cmd": "",
+      "cwd": "",
+      "autostart": false
+    },
+    {
+      "key": "ollama",
+      "name": "向量模型",
+      "port": 11434,
+      "cmd": "",
+      "cwd": "",
+      "autostart": false
+    }
+  ],
+  "plugins": {
+    "companion_dir": "companion",
+    "emotion_dir": "emotion",
+    "billing_usage": "plugin_data/billing/usage.jsonl",
+    "comfy_config": "config/comfy.json"
+  }
+}

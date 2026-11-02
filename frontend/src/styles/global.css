@@ -1,0 +1,90 @@
+@import './theme.css';
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--fs-body);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;              /* 页面自己滚 */
+  text-rendering: optimizeLegibility;
+}
+
+#app { position: relative; }
+
+/* ── 滚动条 ── */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--ba-200);
+  border-radius: var(--r-pill);
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ba-300); background-clip: content-box; }
+
+/* ── 选中 ── */
+::selection { background: var(--ba-200); color: var(--ba-900); }
+
+/* ── 通用工具类 ── */
+.num {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: .01em;
+}
+
+.glass {
+  background: var(--glass);
+  backdrop-filter: var(--blur);
+  -webkit-backdrop-filter: var(--blur);
+  border: 1px solid var(--glass-line);
+}
+
+/* BA 标志性的斜切角 —— 右上切一刀 */
+.clip-corner {
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+}
+
+/* 细斜线网格底纹 */
+.grid-lines {
+  background-image:
+    repeating-linear-gradient(45deg, rgba(61,125,214,.045) 0 1px, transparent 1px 12px);
+}
+
+/* 入场动效 */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pulse-soft {
+  0%, 100% { opacity: .55; }
+  50%      { opacity: 1; }
+}
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+.fade-up { animation: fade-up var(--t-mid) var(--ease-out) both; }
+.fade-in { animation: fade-in var(--t-mid) var(--ease) both; }
+
+/* 减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

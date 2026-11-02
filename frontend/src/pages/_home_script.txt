@@ -1,0 +1,243 @@
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import SpineMika from '@/components/SpineMika.vue'
+import NoticeModal from '@/components/NoticeModal.vue'
+import MailBox from '@/pages/MailBox.vue'
+
+const router = useRouter()
+
+// ── 后端接口 ──
+function authHeaders(): Record<string, string> {
+  const t = localStorage.getItem('schale_token') || ''
+  return t ? { Authorization: `Bearer ${t}` } : {}
+}
+async function apiGet<T = any>(path: string): Promise<T | null> {
+  try {
+    const r = await fetch(path, { headers: authHeaders() })
+    if (!r.ok) return null
+    return (await r.json()) as T
+  } catch {
+    return null
+  }
+}
+
+
+// ── 资源（后续接 BFF，现在先占位） ──
+const level = ref(0)
+const exp = ref(0)
+const expMax = ref(24)
+const ap = ref(0)
+const apMax = ref(28)
+const gem = ref(14.66) // 余额（青晶石）
+const credit = ref(1_192_593) // token（信用点）
+
+const now = ref('')
+let clock = 0
+function tick() {
+  const d = new Date()
+  now.value = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+tick()
+
+const creditText = computed(() => {
+  const v = credit.value
+  if (v >= 1_000_000) return (v / 1_000_000).toFixed(2) + 'M'
+  if (v >= 1_000) return (v / 1_000).toFixed(1) + 'K'
+  return String(v)
+})
+
+// ── 底部导航 ──
+const DOCK = [
+  { key: 'cafe', label: '咖啡厅', icon: '☕', ready: true },
+  { key: 'daily', label: '日程', icon: '📅', ready: false },
+  { key: 'member', label: '成员', icon: '👥', ready: false },
+  { key: 'team', label: '编队', icon: '⚔', ready: false },
+  { key: 'social', label: '社交', icon: '💬', ready: false, badge: '4' },
+  { key: 'craft', label: '制造', icon: '⚙', ready: false },
+  { key: 'shop', label: '商店', icon: '🛒', ready: true },
+  { key: 'gacha', label: '招募', icon: '🎯', ready: false },
+]
+const dock = ref('cafe')
+
+// ── 立绘切换 / 欣赏模式 ──
+const VARIANTS = [
+  { key: 'spr' as const, label: '常服立绘' },
+  { key: 'home' as const, label: '回忆大厅' },
+]
+const variantIdx = ref(Number(localStorage.getItem('schale_variant') || 0) || 0)
+const variant = computed(() => VARIANTS[variantIdx.value % VARIANTS.length].key)
+const zen = ref(false)
+function cycleVariant() {
+  variantIdx.value = (variantIdx.value + 1) % VARIANTS.length
+  localStorage.setItem('schale_variant', String(variantIdx.value))
+  // 回忆大厅是整场景，切过去自动进欣赏模式
+  zen.value = variant.value === 'home'
+}
+function toggleZen() {
+  zen.value = !zen.value
+}
+
+// ── 左侧入口 ──
+const SIDE = [
+  { key: 'notice', label: '公告', icon: '📢', badge: 'noticeBadge', ready: true },
+  { key: 'mail', label: '桃信', icon: '💌', badge: 'mailBadge', ready: true },
+  { key: 'task', label: '工作任务', icon: '📋', sub: '0/8', ready: false },
+  { key: 'shop', label: '购买青辉石', icon: '💎', ready: false },
+]
+
+// ── 右侧卡片 ──
+const todos = ref([
+  { tone: 'warn', text: '余额过半会提醒你', note: '阈值 50% · 每 30 分钟查一次' },
+  { tone: 'ok', text: '模型链路正常', note: 'CodeBuddy 主路 · 官方兜底' },
+])
+
+const nowInfo = ref({
+  online: false,
+  groups: 0,
+  plugins: 0,
+  pluginsTotal: 0,
+})
+
+// ── 公告栏 ──
+const noticeOpen = ref(false)
+// 立绘气泡：由后端 LLM 实时生成
+const helloText = ref('老师，回来了。今天也要一起加油哦☆')
+const helloTyping = ref(false)
+
+async function fetchHello() {
+  if (helloTyping.value) return
+  helloTyping.value = true
+  try {
+    const j = await apiGet<any>('/api/hello')
+    if (j?.text) helloText.value = j.text
+  } finally {
+    helloTyping.value = false
+  }
+}
+const mailOpen = ref(false)
+const NOTICES = ref<any[]>([])
+const EVENTS = ref<any[]>([])
+const ERRORS = ref<any[]>([])
+const noticeTab = ref('')
+
+async function loadAll() {
+  // preview 模式下没有 token，先自动登录一次
+  if (!localStorage.getItem('schale_token')) {
+    try {
+      const r = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: 'CHANGE_ME' }),
+      })
+      if (r.ok) {
+        const j = await r.json()
+        if (j?.token) localStorage.setItem('schale_token', j.token)
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  const ov = await apiGet<any>('/api/overview')
+  if (ov?.res) {
+    gem.value = ov.res.gem ?? gem.value
+    credit.value = ov.res.credit ?? credit.value
+    ap.value = ov.res.ap ?? ap.value
+    apMax.value = ov.res.apMax ?? apMax.value
+  }
+  if (ov?.lv) {
+    level.value = ov.lv.days ?? 0
+    exp.value = ov.lv.exp ?? 0
+    expMax.value = ov.lv.expMax ?? 24
+  }
+  if (ov?.todo?.length) todos.value = ov.todo
+  if (ov?.now) {
+    nowInfo.value = {
+      online: !!ov.now.online,
+      groups: ov.now.groups ?? 0,
+      plugins: ov.now.plugins ?? 0,
+      pluginsTotal: ov.now.pluginsTotal ?? 0,
+    }
+  }
+  const ml = await apiGet<any>('/api/mail')
+  if (ml?.people) MAIL_PEOPLE.value = ml.people
+  const nt = await apiGet<any>('/api/notice')
+  if (nt) {
+    NOTICES.value = nt.notices || []
+    EVENTS.value = nt.events || []
+    ERRORS.value = nt.errors || []
+  }
+}
+
+let refresh = 0
+
+// ── 未读数：公告 = 今天异常条数，桃信 = 还没看过的印象卡 ──
+const noticeSeen = ref<number>(Number(localStorage.getItem('schale_notice_seen') || 0))
+const mailRead = ref<string[]>(JSON.parse(localStorage.getItem('schale_mail_read') || '[]'))
+const MAIL_PEOPLE = ref<any[]>([])
+
+const noticeBadge = computed(() => {
+  const n = ERRORS.value.length - noticeSeen.value
+  return n > 0 ? String(n) : ''
+})
+const mailBadge = computed(() => {
+  const n = MAIL_PEOPLE.value.filter((p: any) => !mailRead.value.includes(p.id)).length
+  return n > 0 ? String(n) : ''
+})
+
+function badgeOf(k: string): string {
+  if (k === 'notice') return noticeBadge.value
+  if (k === 'mail') return mailBadge.value
+  return ''
+}
+
+function markNoticeRead() {
+  noticeSeen.value = ERRORS.value.length
+  localStorage.setItem('schale_notice_seen', String(noticeSeen.value))
+}
+function markMailRead(id: string) {
+  if (!id || mailRead.value.includes(id)) return
+  mailRead.value = [...mailRead.value, id]
+  localStorage.setItem('schale_mail_read', JSON.stringify(mailRead.value))
+}
+function onRail(k: string) {
+  if (k === 'notice') {
+    noticeOpen.value = true
+    markNoticeRead()
+  } else if (k === 'mail') {
+    mailOpen.value = true
+    // 打开就算全部看过
+    mailRead.value = MAIL_PEOPLE.value.map((p: any) => p.id)
+    localStorage.setItem('schale_mail_read', JSON.stringify(mailRead.value))
+  }
+}
+
+function onDock(k: string) {
+  dock.value = k
+  if (k === 'cafe') router.replace('/cafe')
+  else if (k === 'shop') router.replace('/shop')
+}
+
+onMounted(() => {
+  clock = window.setInterval(tick, 20000)
+  // 调试参数：?zen=1 进欣赏模式，?variant=home 切回忆大厅
+  const _sp = new URLSearchParams(location.search)
+  if (_sp.has('zen')) zen.value = true
+  const _v = _sp.get('variant')
+  if (_v) {
+    const _i = VARIANTS.findIndex((x) => x.key === _v)
+    if (_i >= 0) variantIdx.value = _i
+  }
+  // ?notice=1 / ?mail=1 直接打开（调试/截图用）
+  const sp = new URLSearchParams(location.search)
+  if (sp.has('notice')) noticeOpen.value = true
+  if (sp.has('mail')) mailOpen.value = true
+  noticeTab.value = sp.get('tab') || ''
+  loadAll().then(fetchHello)
+  refresh = window.setInterval(loadAll, 60000)
+})
+onUnmounted(() => {
+  window.clearInterval(clock)
+  window.clearInterval(refresh)
+})
+</script>
